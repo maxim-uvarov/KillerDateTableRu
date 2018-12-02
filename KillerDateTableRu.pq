@@ -2,13 +2,13 @@
 let
     Source = (StartDateParam as date, EndDateParam as date, CultureParameter as any, RuHolidaysSwitchParameter as logical) => let
 
-// killerDateTableRu v1.5
+// killerDateTableRu v1.6 (https://github.com/power-bi/KillerDateTableRu)
 // функция killerDateTableRu создает таблицу с датами. Дополняет ее различными полезными для Time Intelligence столбцами. 
 // В случае, если четвертый аргумент принимает Дни 1, то функция добавляет столбец с выходными.
 // Оригинальная идея philbritton https://gist.github.com/philbritton/9677152
 // Дополнил русскими выходными и дополнительными столбцам Максим Уваров
-// Причесал код, исправил ошибки Дмитрий Власов https://gist.github.com/DmitriyVlasov/d6e30c476bca35de148260e1ebc95c82
-// пример: killerDateTableRu(#date(2017, 2, 1), #date(2017, 2, 4), "RU-ru", 1)
+// Причесал код, исправил ошибки Дмитрий Власов 
+// Пример использования функции: killerDateTableRu(#date(2017, 2, 1), #date(2017, 2, 4), "RU-ru", 1)
 
 
   StartDateParameter = StartDateParam ,   
