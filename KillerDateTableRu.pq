@@ -1,14 +1,28 @@
 // KillerDateTable
 let
-    Source = (StartDateParam as date, EndDateParam as date, CultureParameter as any, RuHolidaysSwitchParameter as logical) => let
+    Source = (StartDateParam as date, EndDateParam as date, IndexReverse0Date as any, CultureParameter as any, RuHolidaysSwitchParameter as logical) => let
 
-// killerDateTableRu v1.6 (https://github.com/power-bi/KillerDateTableRu)
+// killerDateTableRu v1.7 (https://github.com/power-bi/KillerDateTableRu)
+
 // функция killerDateTableRu создает таблицу с датами. Дополняет ее различными полезными для Time Intelligence столбцами. 
-// В случае, если четвертый аргумент принимает Дни 1, то функция добавляет столбец с выходными.
-// Оригинальная идея philbritton https://gist.github.com/philbritton/9677152
+// Первый аргумент - дата начала календаря
+// Второй аргумент - последняя дата создаваемого календаря
+// Третий аргумент ("IndexReverse0Date") - дата для определения нумерации столбцов Sequence Reverse. Столбцы удобны для построения отчетов
+// с относительными времеными промежутками вчера, неделю назад и т.д. В качестве значений можно прописать дату в текстовом
+// формате, в формате #date(01,01,2015) или в формате today, yesterday.
+// Четвертый аргумент ("CultreParmeter") - задание локали, для подстановки названий дней недели или месяцев в соответстующие столбцы.
+// Пятый аргумент ("RuHolidaysSwitchParameter") принимает значение 1 или true, то функция добавляет столбцы
+// "IsShortDayInRussia" - флаг пометки сокращенного дня и "IsHolidayInRussia" -  флаг пометки выходного дня.
+
+// Авторы:
 // Дополнил русскими выходными и дополнительными столбцам Максим Уваров
 // Причесал код, исправил ошибки Дмитрий Власов 
-// Пример использования функции: killerDateTableRu(#date(2017, 2, 1), #date(2017, 2, 4), "RU-ru", 1)
+
+// Оригинальная идея календаря и названия Phil Britton https://gist.github.com/philbritton/9677152
+// Похожие проекты: 
+// 1. https://github.com/dmitriysolovev/powerbi/blob/master/fnDateTableRus
+// 2. https://excel.city/2016/11/скачать-производственный-календарь/ 
+// Пример использования функции: killerDateTableRu(#date(2017, 2, 1), #date(2017, 2, 4), "yesterday","RU-ru", 1)
 
 
   StartDateParameter = StartDateParam ,   
@@ -110,7 +124,10 @@ let
     PROD_СALENDAR_URL_Backup =
       "https://raw.githubusercontent.com/power-bi/KillerDateTableRu/master/data-20180410T1145-structure-20180410T1145.csv",
 
-    ProductionCalendar = Table.Buffer( try getProductionCalendar( PROD_СALENDAR_URL ) otherwise getProductionCalendar( PROD_СALENDAR_URL_Backup ) ) ,
+    ProductionCalendar = Table.Buffer( 
+      try getProductionCalendar( PROD_СALENDAR_URL ) 
+      otherwise getProductionCalendar( PROD_СALENDAR_URL_Backup ) 
+      ) ,
 
     ListOfShortday = 
       Table.SelectRows( ProductionCalendar, each [Сокращенный День] = true )[Дата],
@@ -130,7 +147,13 @@ let
           EndDateParameter - StartDateParameter 
         ) 
       ) + 1,
-    
+      
+    ReverseIndex0DateInput = Text.Lower ( IndexReverse0Date ),
+    ReverseIndex0Date = if ReverseIndex0DateInput = "today" then Date.From(DateTime.FixedLocalNow())
+        else if ReverseIndex0DateInput = "yesterday" then Date.AddDays(Date.From(DateTime.FixedLocalNow()), -1)
+        else try Date.From(ReverseIndex0DateInput) 
+            otherwise Date.AddDays(Date.From(DateTime.FixedLocalNow()), 0),
+            
     MainList = 
       List.Dates( StartDateParameter, DayCount, #duration( 1, 0, 0, 0 ) ),
     
@@ -152,14 +175,14 @@ let
         Int64.Type
       ),
     
-    QuarterOfYear = 
-      Table.AddColumn( Year, "QuarterOfYear", each 
+    QuarterOfYearNumber = 
+      Table.AddColumn( Year, "QuarterOfYearNumber", each 
         Date.QuarterOfYear( [Date] ),
         Int64.Type
       ),
     
     MonthOfYearNumber = 
-      Table.AddColumn( QuarterOfYear, "MonthOfYearNumber", each
+      Table.AddColumn( QuarterOfYearNumber, "MonthOfYearNumber", each
         Date.Month( [Date] ),
         Int64.Type 
       ),
@@ -196,7 +219,7 @@ let
     
     QuarterAndYear = 
       Table.AddColumn( MonthAndYear, "QuarterAndYear", each 
-        "Q" & Number.ToText( [QuarterOfYear] ) & " " & Number.ToText( [Year] ),
+        "Q" & Number.ToText( [QuarterOfYearNumber] ) & " " & Number.ToText( [Year] ),
         type text
       ),
     
@@ -246,69 +269,71 @@ let
         )
         ),
     
-    MonthSeqNumber = 
-      Table.AddColumn( DayOfYearNumber, "MonthSeqNumber", each
-        List.PositionOf( listBufferMonths, [MonthStartDate]) + 1,
+    MonthCalendarSeqNumber = 
+      Table.AddColumn( DayOfYearNumber, "MonthCalendarSeqNumber", 
+        each List.PositionOf( listBufferMonths, [MonthStartDate]) + 1,
         Int64.Type
       ),
     
-    MonthSeqNumberReverse = 
-      Table.AddColumn( MonthSeqNumber, "MonthSeqNumberReverse", each
-        List.PositionOf(
-          List.Reverse( listBufferMonths ),
-          [MonthStartDate]
-        ) + 1,
+    MonthCalendarSeqNumberReverse = 
+      Table.AddColumn( MonthCalendarSeqNumber, "MonthCalendarSeqNumberReverse", 
+        each [MonthCalendarSeqNumber] - 1 - List.PositionOf(listBufferMonths, Date.StartOfMonth(ReverseIndex0Date)) ,
         Int64.Type
       ),
     
     listBufferWeeks =
       List.Buffer( 
-        List.Distinct( MonthSeqNumberReverse[WeekStart] )
+        List.Distinct( MonthCalendarSeqNumberReverse[WeekStart] )
       ),
     
     DaySeqNumber =
       Table.AddIndexColumn(
-        MonthSeqNumberReverse,
+        MonthCalendarSeqNumberReverse,
         "DaySeqNumber",
-        1,
+        0,
         1
       ),
     DaySeqNumberChangedType = Table.TransformColumnTypes(DaySeqNumber,{{"DaySeqNumber", Int64.Type}}),
-
-    DaySeqNumberReverse =
-      Table.AddIndexColumn( 
-        DaySeqNumberChangedType,
-        "DaySeqNumberReverse",
-        -Table.RowCount(DaySeqNumberChangedType) + 1,
-        1 
-      ),
-    DaySeqNumberReverseChangedType = Table.TransformColumnTypes(DaySeqNumberReverse,{{"DaySeqNumberReverse", Int64.Type}}),
-
-    WeekSeqNumberReverse = 
+    DaySeqNumberReverse = 
       Table.AddColumn(
-        DaySeqNumberReverseChangedType, 
-        "WeekSeqNumberReverse", 
-        each Number.IntegerDivide([DaySeqNumberReverse], 7), 
+        DaySeqNumberChangedType, 
+        "DaySeqNumberReverse", 
+        each Number.From([Date]-ReverseIndex0Date), 
+        Int64.Type),
+        
+    SevenDaysIntervalReverse = 
+      Table.AddColumn(
+        DaySeqNumberReverse, 
+        "SevenDaysIntervalReverse", 
+        each Number.RoundDown([DaySeqNumberReverse] / 7), 
         Int64.Type),
    
     WeekCalendarSeqNumber = 
       Table.AddColumn( 
-        WeekSeqNumberReverse, 
+        SevenDaysIntervalReverse, 
         "WeekCalendarSeqNumber", 
-        each List.PositionOf( listBufferWeeks, [WeekStart] ) + 1,
+        each List.PositionOf( listBufferWeeks, [WeekStart] ) ,
         Int64.Type
       ),
     
     WeekCalendarSeqNumberReverse = Table.AddColumn( 
       WeekCalendarSeqNumber, 
         "WeekCalendarSeqNumberReverse", 
-        each [WeekCalendarSeqNumber] - List.Count(listBufferWeeks),
+        each [WeekCalendarSeqNumber] - List.PositionOf( listBufferWeeks, Date.StartOfWeek(ReverseIndex0Date, Day.Monday )),
         Int64.Type
       ),
+    WeekCurrentAnotherWeek = Table.AddColumn(
+      WeekCalendarSeqNumberReverse, 
+      "ТекущаяПрошлаяНеделя", 
+      each if [WeekCalendarSeqNumberReverse] = 0 then "Текущая неделя" 
+        else if [WeekCalendarSeqNumberReverse] = -1 then "Прошлая неделя" 
+        else if [WeekCalendarSeqNumberReverse] = -2 then "Позапрошлая неделя" 
+        else if [WeekCalendarSeqNumberReverse] > 0 then "В будущем" 
+        else "Больше 2-ух недель назад"),
     
     IsHolidayInRussia = 
       Table.AddColumn( 
-        WeekCalendarSeqNumberReverse, 
+        WeekCurrentAnotherWeek, 
         "IsHolidayInRussia", 
         each 
           if List.Count( CheckIfThereIsHolidayList ) = 0 
@@ -339,20 +364,20 @@ let
         "DayOfWeekName", 
         "DayOfWeekNumber", 
         "DayOfYearNumber", 
+        "SevenDaysIntervalReverse", 
         "WeekCalendarSeqNumber", 
         "WeekCalendarSeqNumberReverse", 
         "WeekStart", 
         "WeekEnd", 
-        "WeekSeqNumberReverse", 
         "WeekOfYearNumber", 
         "MonthAndYear", 
         "MonthName", 
-        "MonthSeqNumber", 
-        "MonthSeqNumberReverse", 
+        "MonthCalendarSeqNumber", 
+        "MonthCalendarSeqNumberReverse", 
         "MonthOfYearNumber", 
         "MonthStartDate", 
         "QuarterAndYear", 
-        "QuarterOfYear", 
+        "QuarterOfYearNumber", 
         "Year", 
         "YearMonthDateNumber", 
         "YearMonthNumber", 
