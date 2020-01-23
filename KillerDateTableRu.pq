@@ -1,8 +1,8 @@
 // KillerDateTable
 let
-    Source = (StartDateParam as date, EndDateParam as date, IndexReverse0Date as any, CultureParameter as any, RuHolidaysSwitchParameter as logical) => let
+    Source = (StartDateParam as date, EndDateParam as date, IndexReverse0Date as date, CultureParameter as any, RuHolidaysSwitchParameter as logical) => let
 
-// killerDateTableRu v1.7 (https://github.com/power-bi/KillerDateTableRu)
+// killerDateTableRu v1.8 (https://github.com/power-bi/KillerDateTableRu)
 
 // функция killerDateTableRu создает таблицу с датами. Дополняет ее различными полезными для Time Intelligence столбцами. 
 // Первый аргумент - дата начала календаря
@@ -148,11 +148,7 @@ let
         ) 
       ) + 1,
       
-    ReverseIndex0DateInput = Text.Lower ( IndexReverse0Date ),
-    ReverseIndex0Date = if ReverseIndex0DateInput = "today" then Date.From(DateTime.FixedLocalNow())
-        else if ReverseIndex0DateInput = "yesterday" then Date.AddDays(Date.From(DateTime.FixedLocalNow()), -1)
-        else try Date.From(ReverseIndex0DateInput) 
-            otherwise Date.AddDays(Date.From(DateTime.FixedLocalNow()), 0),
+    ReverseIndex0Date = if IndexReverse0Date = null then EndDateParam else IndexReverse0Date,
             
     MainList = 
       List.Dates( StartDateParameter, DayCount, #duration( 1, 0, 0, 0 ) ),
@@ -342,7 +338,7 @@ let
             if List.Contains( CheckIfThereIsHolidayList, [Date]) 
             then true 
             else false,
-      type logical
+	    type logical
       ),
 
     IsShortDayInRussia = 
@@ -353,9 +349,10 @@ let
           if List.Contains( CheckIfThereIsShortdayList, [Date]) 
           then true 
           else false,
-    type logical
+	  type logical
       ),
-    #"Reordered Columns" = Table.ReorderColumns(IsShortDayInRussia,
+    CheckIfRuCalendarNeeded = if IsRuHolidaysParameter = true then IsShortDayInRussia else WeekCurrentAnotherWeek,
+    #"Reordered Columns" = Table.ReorderColumns(CheckIfRuCalendarNeeded,
       {
         "Date", 
         "DayOfMonthNumber", 
@@ -380,9 +377,7 @@ let
         "QuarterOfYearNumber", 
         "Year", 
         "YearMonthDateNumber", 
-        "YearMonthNumber", 
-        "IsHolidayInRussia", 
-        "IsShortDayInRussia"
+        "YearMonthNumber"
       }
     )
 in
