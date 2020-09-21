@@ -1,8 +1,8 @@
-// KillerDateTable
+// KillerDateTableRuForPowerBIService
 let
     Source = (StartDateParam as date, EndDateParam as date, IndexReverse0Date as date, CultureParameter as any, RuHolidaysSwitchParameter as logical) => let
 
-// killerDateTableRu v1.8 (https://github.com/power-bi/KillerDateTableRu)
+// killerDateTableRu v2.0 (https://github.com/power-bi/KillerDateTableRu)
 
 // функция killerDateTableRu создает таблицу с датами. Дополняет ее различными полезными для Time Intelligence столбцами. 
 // Первый аргумент - дата начала календаря
@@ -36,18 +36,12 @@ let
         "Октябрь", "Ноябрь", "Декабрь"
       },
 
-    getProductionCalendar = ( URL as text ) as nullable table =>
+    // Последнюю версию календаря можно скачать по ссылке:
+        // https://data.gov.ru/opendata/7708660670-proizvcalendar?page=1
+        getProductionCalendar = ( ) as nullable table =>
       let
-          GetDataFromGovRu =
-            Csv.Document( 
-              Web.Contents( URL ),
-              [ Delimiter  = ",",
-                Encoding   = 65001,
-                QuoteStyle = QuoteStyle.None ]
-            ),
-
-          #"Повышенные заголовки" = 
-            Table.PromoteHeaders( GetDataFromGovRu ),
+        #"Повышенные заголовки" = 
+            Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("7VpRbuwgDLxLPgmKwECAs1S9/zUeYCCwggSyVbfd16+sQmJgxvYYZz8+Fm6tXejCKVBBJd0J1dRSzijfKdcUBAVJBaOCu6d2N8gF5ZICo+DecQ+YeN80R7xNb4x7Y9x4Y6CcPVLMaeKEys8JEOa07hn3iKJuFZxQDtE6t2EC95zuW+fBeFiS9Gb9epxZN+63KqkKb4B/w9tzD+zuvl/M6c7bOyzMidKie89vElRYDZf+N2P+wg3TG/gfwORmlk/64YfYIw0Blx4oOF2Fhl+JJn6Zjd15yz2DfixskPgHzlmEEuoLu72FdpC+ZE1f8BYdpUEfqGCdBySsVcgCQw5YYoCXWIy7c7yP0E95YxEIHivE/xSw1hZvefsZb70wz57ZgiAbhKbNhzjg/TiAAhE95D9AIhZhIX40cDGexsxDRlKRiuzyDdwiE5PwTWersxg6skTHH8rMWbldTE0YFAqDIuCu8cLdJdIhMi6KICOj3iTjQEHGaJJ4VIiCjQ50lUioUQSnle4snE6TNiJX8nHYneJDFri0g7HrUiJj8ifYl4KtKsEWKVGxI1GppcwYeyJ/0M1j0orAxNgy03oJadpz4MQsdjPqd6YlgkR0Whs7cQeQJtCgQzCYwIk2sIVg40ZvMtGwt2kYcaRaOJ6on47Q/5nV08HCbByN86AbPAx5Uc3CnVKKFFRcF1KkYON1hZSaCCVS0GGLQtbsSMe+IUnGblknTIuO6WLqK/T7XL0b2j1cAH2dfJNS2kaZfNDteLgQqNsCdVskPmyDD1z/oHLnkcHkVvhnzUEPr051ctP3b+R8TkOemiqFEwd1XGiMCx3jwrIcF5x1eRjxI9yii4in+x6/oYjKsqEHfWKaDd5l46+G+r4aikObhokaKmKS1Xs4tVXinWd2Vt9XvPWVeHPR4GNGvJdbbRCdVKbTBWlD9wMaIXKuIM5ZSiPwgQ4dXtAaNokkWRcnkQ7ZomO4DZJy/kv6IC+ope6UUlN09A/e432QO9XUCRvvWVNVhKB8aBEJMewgpHMEv/YnUhZViMtMuqtFXLytjCMPFnmQyMOeeBAHD80j+GQjBEF5phfyvq2QKh7wnKdV4gEOHppn7ydaITPJraqnRr4r/e6KalQzWsfv76morr4t/a9VFbRO4uNV1YobiCK+3lXxlaq1YGR9Vyk3JSkBOB0UPNxV+SQI/QP5UHuElFIe/1Nwqz+yxnnXoQ7J+toWyVSJPNsjgc7h/EaDxL9M7tRW62Bptf6+2qpiIQaGTSzAwULzSD7fIHm2sPrBf9FJHKx3SquKBoM0mEQDP0SjeRSfL62e1fJDx99TxOtPGnjkwAu3WSta5/AJAV8e2iInqb7bF5nriry0JULufl4a+OT3+Q8=", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"Год/Месяц" = _t, Январь = _t, Февраль = _t, Март = _t, Апрель = _t, Май = _t, Июнь = _t, Июль = _t, Август = _t, Сентябрь = _t, Октябрь = _t, Ноябрь = _t, Декабрь = _t, #"Всего рабочих дней" = _t, #"Всего праздничных и выходных дней" = _t, #"Количество рабочих часов при 40-часовой рабочей неделе" = _t, #"Количество рабочих часов при 36-часовой рабочей неделе" = _t, #"Количество рабочих часов при 24-часовой рабочей неделе" = _t]),
           
           #"Переименовали поле в год" = 
             Table.RenameColumns( #"Повышенные заголовки",
@@ -115,18 +109,8 @@ let
       in
           #"Рассчитали дату",
 
-// Примечание: 
-//  источник взят отсюда: http://data.gov.ru/opendata/7708660670-proizvcalendar
-//  На момент 24.05.2018 в календаре содержатся описание праздников с 1999 года по 2025 год.
-    PROD_СALENDAR_URL =
-      "https://data.gov.ru/opendata/7708660670-proizvcalendar/data-20191112T1252-structure-20191112T1247.csv?encoding=UTF-8",
-      
-    PROD_СALENDAR_URL_Backup =
-      "https://raw.githubusercontent.com/power-bi/KillerDateTableRu/master/data-20191112T1252-structure-20191112T1247.csv",
-
-    ProductionCalendar = Table.Buffer( 
-      try getProductionCalendar( PROD_СALENDAR_URL ) 
-      otherwise getProductionCalendar( PROD_СALENDAR_URL_Backup ) 
+ProductionCalendar = Table.Buffer( 
+       getProductionCalendar( ) 
       ) ,
 
     ListOfShortday = 
@@ -338,7 +322,7 @@ let
             if List.Contains( CheckIfThereIsHolidayList, [Date]) 
             then true 
             else false,
-	    type logical
+      type logical
       ),
 
     IsShortDayInRussia = 
@@ -349,7 +333,7 @@ let
           if List.Contains( CheckIfThereIsShortdayList, [Date]) 
           then true 
           else false,
-	  type logical
+    type logical
       ),
     CheckIfRuCalendarNeeded = if IsRuHolidaysParameter = true then IsShortDayInRussia else WeekCurrentAnotherWeek,
     #"Reordered Columns" = Table.ReorderColumns(CheckIfRuCalendarNeeded,
