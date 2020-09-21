@@ -119,10 +119,10 @@ let
 //  источник взят отсюда: http://data.gov.ru/opendata/7708660670-proizvcalendar
 //  На момент 24.05.2018 в календаре содержатся описание праздников с 1999 года по 2025 год.
     PROD_СALENDAR_URL =
-      "http://data.gov.ru/opendata/7708660670-proizvcalendar/data-20180410T1145-structure-20180410T1145.csv?encoding=UTF-8",
+      "https://data.gov.ru/opendata/7708660670-proizvcalendar/data-20191112T1252-structure-20191112T1247.csv?encoding=UTF-8",
       
     PROD_СALENDAR_URL_Backup =
-      "https://raw.githubusercontent.com/power-bi/KillerDateTableRu/master/data-20180410T1145-structure-20180410T1145.csv",
+      "https://raw.githubusercontent.com/power-bi/KillerDateTableRu/master/data-20191112T1252-structure-20191112T1247.csv",
 
     ProductionCalendar = Table.Buffer( 
       try getProductionCalendar( PROD_СALENDAR_URL ) 
