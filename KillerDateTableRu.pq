@@ -1,6 +1,6 @@
 // KillerDateTableRuForPowerBIService
 let
-    Source = (StartDateParam as date, EndDateParam as date, IndexReverse0Date as date, CultureParameter as any) => let
+    Source = (StartDateParam as date, EndDateParam as date, optional IndexReverse0Date as nullable date, optional CultureParameter as nullable text) => let
 
 // killerDateTableRu v2.1 (https://github.com/power-bi/KillerDateTableRu)
 
@@ -8,10 +8,9 @@ let
 // Первый аргумент - дата начала календаря
 // Второй аргумент - последняя дата создаваемого календаря
 // Третий аргумент ("IndexReverse0Date") - дата для определения нумерации столбцов Sequence Reverse. Столбцы удобны для построения отчетов
-// с относительными времеными промежутками вчера, неделю назад и т.д. В качестве значений можно прописать дату в текстовом
-// формате, в формате #date(01,01,2015) или в формате today, yesterday.
+// с относительными времеными промежутками вчера, неделю назад и т.д.
 // Четвертый аргумент ("CultreParmeter") - задание локали, для подстановки названий дней недели или месяцев в соответстующие столбцы.
-// Пятый аргумент ("RuHolidaysSwitchParameter") принимает значение 1 или true, то функция добавляет столбцы
+// Пятый аргумент ("RuHolidaysSwitchParameter") (не используется в версии 2.1) принимает значение 1 или true, то функция добавляет столбцы
 // "IsShortDayInRussia" - флаг пометки сокращенного дня и "IsHolidayInRussia" -  флаг пометки выходного дня.
 
 // Авторы:
@@ -257,7 +256,7 @@ ProductionCalendar = Table.Buffer(
     
     MonthCalendarSeqNumberReverse = 
       Table.AddColumn( MonthCalendarSeqNumber, "MonthCalendarSeqNumberReverse", 
-        each [MonthCalendarSeqNumber] - 1 - List.PositionOf(listBufferMonths, Date.StartOfMonth(ReverseIndex0Date)) ,
+        let _p = List.PositionOf(listBufferMonths, Date.StartOfMonth(ReverseIndex0Date)) in each [MonthCalendarSeqNumber] - 1 - _p ,
         Int64.Type
       ),
     
@@ -299,7 +298,7 @@ ProductionCalendar = Table.Buffer(
     WeekCalendarSeqNumberReverse = Table.AddColumn( 
       WeekCalendarSeqNumber, 
         "WeekCalendarSeqNumberReverse", 
-        each [WeekCalendarSeqNumber] - List.PositionOf( listBufferWeeks, Date.StartOfWeek(ReverseIndex0Date, Day.Monday )),
+        let _p = List.PositionOf( listBufferWeeks, Date.StartOfWeek(ReverseIndex0Date, Day.Monday )) in each [WeekCalendarSeqNumber] - _p,
         Int64.Type
       ),
     WeekCurrentAnotherWeek = Table.AddColumn(
@@ -315,25 +314,26 @@ ProductionCalendar = Table.Buffer(
       Table.AddColumn( 
         WeekCurrentAnotherWeek, 
         "IsHolidayInRussia", 
-        each 
-          if List.Count( CheckIfThereIsHolidayList ) = 0 
+        let _ch = List.IsEmpty( CheckIfThereIsHolidayList ) in each 
+          if  _ch
           then null
           else 
             if List.Contains( CheckIfThereIsHolidayList, [Date]) 
             then true 
             else false,
-	    type logical
+    	type logical
       ),
 
     IsShortDayInRussia = 
-      Table.AddColumn( IsHolidayInRussia, "IsShortDayInRussia", each
-        if List.Count( CheckIfThereIsShortdayList ) = 0 
-        then null
+      Table.AddColumn( IsHolidayInRussia, "IsShortDayInRussia", 
+        let _ch = List.IsEmpty( CheckIfThereIsShortdayList ) in each
+	if _ch 
+	then null
         else 
           if List.Contains( CheckIfThereIsShortdayList, [Date]) 
           then true 
           else false,
-	  type logical
+  	type logical
       ),
     // CheckIfRuCalendarNeeded = if IsRuHolidaysParameter = true then IsShortDayInRussia else WeekCurrentAnotherWeek,
     #"Reordered Columns" = Table.ReorderColumns(IsShortDayInRussia,
