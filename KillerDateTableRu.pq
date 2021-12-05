@@ -1,8 +1,11 @@
 // KillerDateTableRuForPowerBIService
 let
-    Source = (StartDateParam as date, EndDateParam as date, IndexReverse0Date as date, CultureParameter as any) => let
+    Source = (StartDateParam as date, EndDateParam as date, optional IndexReverse0Date as nullable date, optional CultureParameter as nullable text) => let
 
-// killerDateTableRu v2.1 (https://github.com/power-bi/KillerDateTableRu)
+// killerDateTableRu v2.2 (https://github.com/power-bi/KillerDateTableRu)
+
+// Заменить в заголовке
+//  Source = (StartDateParam as date, EndDateParam as date, optional IndexReverse0Date as nullable date, optional CultureParameter as nullable text) => let
 
 // функция killerDateTableRu создает таблицу с датами. Дополняет ее различными полезными для Time Intelligence столбцами. 
 // Первый аргумент - дата начала календаря
